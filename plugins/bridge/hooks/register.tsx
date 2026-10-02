@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
 import type { Ctx, TurnIO } from '../types'
-import { bar, callout, clock, color, level, percentOf, tok } from './readout'
+import { bar, callout, clock, color, level, percentOf, tok, turnToast } from './readout'
 
 const ctx = atom({ plugin: 'bridge', key: 'ctx' } as const, null as Ctx | null)
 const last = atom({ plugin: 'bridge', key: 'last' } as const, null as TurnIO | null)
@@ -11,8 +11,11 @@ const total = atom({ plugin: 'bridge', key: 'total' } as const, 0)
 const startedAt = atom({ plugin: 'bridge', key: 'startedAt' } as const, 0)
 const now = atom({ plugin: 'bridge', key: 'now' } as const, 0)
 const isHidden = atom({ plugin: 'bridge', key: 'isHidden' } as const, false)
+const turnTools0 = atom({ plugin: 'bridge', key: 'turnTools0' } as const, 0)
 
-export const register: Register = on => {
+export const register: Register = (on, options) => {
+  const toastAfterMs = Number(options.toastAfterSeconds ?? 60) * 1000
+
   on('session.start', async ($, e, next) => {
     await $.command.register({ name: 'bridge', description: 'Show or hide the bridge readout above the prompt' })
     const usage = await $.session.usage()
@@ -36,12 +39,25 @@ export const register: Register = on => {
     return next(e)
   })
 
+  // Main thread only: a subagent's run raises no turn.start.
+  on('turn.start', async ($, e, next) => {
+    const n = await read($, tools)
+    await update($, turnTools0, () => n)
+    return next(e)
+  })
+
   on('turn.complete', async ($, e, next) => {
+    if (e.agentId) return next(e)
     const u = e.usage
-    if (u && !e.agentId) {
-      const input = u.input_tokens + u.cache_read_input_tokens + u.cache_creation_input_tokens
-      await update($, last, () => ({ input, output: u.output_tokens }))
-      await update($, total, n => n + input + u.output_tokens)
+    const io = u ? { input: u.input_tokens + u.cache_read_input_tokens + u.cache_creation_input_tokens, output: u.output_tokens } : null
+    if (io) {
+      await update($, last, () => io)
+      await update($, total, n => n + io.input + io.output)
+    }
+    // Long-turn toast: you looked away, the bridge calls you back. Not for an interrupt you caused.
+    if (toastAfterMs > 0 && !e.isAborted && e.durationMs >= toastAfterMs) {
+      const calls = (await read($, tools)) - (await read($, turnTools0))
+      $.ui.toast(turnToast(e.reason, e.durationMs, calls, io), { timeoutMs: 8000 })
     }
     return next(e)
   })

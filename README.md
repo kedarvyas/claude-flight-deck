@@ -17,6 +17,17 @@ A one-line, spaceship-style readout above the Claude Code prompt.
 
 Readouts drop right-to-left as the window narrows. `/bridge` toggles it.
 
+### Long-turn toast
+
+When a turn runs 60 seconds or longer, a toast calls you back:
+
+```
+◉ TURN COMPLETE · 2m14s · 12 TOOLS · 19k↓ 1.1k↑
+```
+
+Interrupted turns and subagent turns stay quiet. Change the threshold with the
+`toastAfterSeconds` option in `/plugin` (0 turns it off).
+
 ## Install
 
 ```

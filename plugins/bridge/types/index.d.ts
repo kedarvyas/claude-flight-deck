@@ -11,6 +11,7 @@ declare module 'claude-code' {
       startedAt: number
       now: number
       isHidden: boolean
+      turnTools0: number
     }
   }
 }

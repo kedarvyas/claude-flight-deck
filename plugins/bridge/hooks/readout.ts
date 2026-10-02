@@ -38,3 +38,19 @@ export const bar = (pct: number, segments: number): { filled: string; empty: str
 // The band's status word, ship-readout style.
 export const callout = (lvl: Level): string =>
   ({ nominal: 'NOMINAL', caution: 'CAUTION', alert: 'ALERT', critical: 'CONTEXT CRITICAL' })[lvl]
+
+// 45s, 2m14s, 1h03m: turn length for the toast.
+export const dur = (ms: number): string => {
+  const s = Math.round(ms / 1000)
+  if (s < 60) return `${s}s`
+  if (s < 3600) return `${Math.floor(s / 60)}m${pad2(s % 60)}s`
+  return `${Math.floor(s / 3600)}h${pad2(Math.floor(s / 60) % 60)}m`
+}
+
+export const turnToast = (reason: string, ms: number, calls: number, io: { input: number; output: number } | null): string =>
+  [
+    reason === 'error' ? '◉ TURN ENDED: ERROR' : '◉ TURN COMPLETE',
+    dur(ms),
+    `${calls} TOOLS`,
+    ...(io ? [`${tok(io.input)}↓ ${tok(io.output)}↑`] : []),
+  ].join(' · ')

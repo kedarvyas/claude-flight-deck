@@ -1,6 +1,6 @@
 {
   "name": "bridge",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Command-center readout pane: context fill, last turn I/O, tool calls, session clock and tokens",
   "types": "./types/index.d.ts",
   "author": {
@@ -11,6 +11,15 @@
     "context",
     "tokens",
     "status",
-    "band"
-  ]
+    "band",
+    "toast"
+  ],
+  "userConfig": {
+    "toastAfterSeconds": {
+      "type": "number",
+      "title": "Long-turn toast after (seconds)",
+      "description": "Toast when a turn runs at least this long. 0 turns the toast off.",
+      "default": 60
+    }
+  }
 }

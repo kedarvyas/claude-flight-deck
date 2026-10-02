@@ -1,6 +1,7 @@
+import type { On } from 'claude-code'
 import { describe, expect, test } from 'claude-code/testing'
 
-import { AMBER, GREEN, RED, bar, callout, clock, color, level, tok } from '../hooks/readout'
+import { AMBER, GREEN, RED, bar, callout, clock, color, dur, level, tok } from '../hooks/readout'
 
 const SURFACES = ['terminal', 'desktop'] as const
 
@@ -30,6 +31,9 @@ describe('readout', () => {
     expect(tok(1_000_000)).toBe('1.00M')
     expect(clock(3_725_000)).toBe('01:02:05')
     expect(bar(50, 10)).toEqual({ filled: '▰▰▰▰▰', empty: '▱▱▱▱▱' })
+    expect(dur(45_000)).toBe('45s')
+    expect(dur(134_000)).toBe('2m14s')
+    expect(dur(3_780_000)).toBe('1h03m')
   })
 })
 
@@ -71,5 +75,47 @@ describe('band', () => {
     expect(await narrow.find({ key: 'io' })).toBeUndefined()
     expect(await narrow.find({ key: 'ctx' })).toBeDefined()
     await narrow.unmount()
+  })
+})
+
+describe('long-turn toast', () => {
+  const usage = { model: 'm', input_tokens: 1000, cache_read_input_tokens: 18_000, cache_creation_input_tokens: 0, output_tokens: 1100 }
+  const complete = (durationMs: number, extra = {}) =>
+    ({ reason: 'answer', answer: 'ok', durationMs, isAborted: false, turnId: 'turn-1', usage, ...extra }) as never
+
+  const setup = (on: On) => {
+    const toasts: string[] = []
+    on('ui.toast', (_$, e) => {
+      toasts.push(e.text)
+      return { value: undefined }
+    })
+    on('turn.start', (_$, e) => ({ turnId: e.turnId }))
+    on('turn.complete', () => ({ text: '' }))
+    on('tool.call', () => ({ result: 'ok' as never }))
+    return toasts
+  }
+
+  test('a long turn toasts with its length, tools and I/O', async ($, on) => {
+    const toasts = setup(on)
+    await $.tool.call({ tool: 'Read', tool_use_id: 'before', input: {} } as never)
+    await $.turn.start({ text: 'go', turnId: 'turn-1' } as never)
+    await $.tool.call({ tool: 'Bash', tool_use_id: 'a', input: {} } as never)
+    await $.tool.call({ tool: 'Edit', tool_use_id: 'b', input: {} } as never)
+    await $.turn.complete(complete(134_000))
+    expect(toasts).toEqual(['◉ TURN COMPLETE · 2m14s · 2 TOOLS · 19k↓ 1.1k↑'])
+  })
+
+  test('short, interrupted and subagent turns stay quiet', async ($, on) => {
+    const toasts = setup(on)
+    await $.turn.complete(complete(5_000))
+    await $.turn.complete(complete(300_000, { isAborted: true, reason: 'aborted' }))
+    await $.turn.complete(complete(300_000, { agentId: 'sub-1' }))
+    expect(toasts).toEqual([])
+  })
+
+  test('the threshold is an option, and 0 turns it off', { options: { toastAfterSeconds: 0 } }, async ($, on) => {
+    const toasts = setup(on)
+    await $.turn.complete(complete(400_000))
+    expect(toasts).toEqual([])
   })
 })
