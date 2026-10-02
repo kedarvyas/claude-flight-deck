@@ -22,9 +22,16 @@ Readouts drop right-to-left as the window narrows. `/bridge` toggles it.
 ```
 /plugin marketplace add kedarvyas/claude-bridge
 /plugin install bridge@claude-bridge
+/reload-plugins
 ```
 
+If it doesn't appear after the reload, restart Claude Code.
+
 ## What it can touch
+
+A mod runs inside Claude Code on your machine with the same access Claude Code has,
+so read the source before installing any mod, this one included.
+
 
 Nothing outside the session. It reads token figures the engine already computes
 (`$.session.usage`, `session.measure`, `turn.complete`, `tool.call`) and draws one
