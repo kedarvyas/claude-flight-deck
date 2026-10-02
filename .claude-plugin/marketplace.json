@@ -1,15 +1,15 @@
 {
-  "name": "claude-bridge",
+  "name": "claude-flight-deck",
   "description": "Minimal status readouts for Claude Code",
   "owner": {
     "name": "Kedar Vyas"
   },
   "plugins": [
     {
-      "name": "bridge",
-      "source": "./plugins/bridge",
+      "name": "flight-deck",
+      "source": "./plugins/flight-deck",
       "description": "Spaceship-style readout above the prompt (context fill, last turn I/O, tool calls, session clock and tokens) and a toast when a long turn finishes",
-      "version": "0.2.1"
+      "version": "0.3.0"
     }
   ]
 }

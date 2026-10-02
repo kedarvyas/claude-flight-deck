@@ -1,6 +1,6 @@
 {
-  "name": "bridge",
-  "version": "0.2.1",
+  "name": "flight-deck",
+  "version": "0.3.0",
   "description": "Command-center readout pane: context fill, last turn I/O, tool calls, session clock and tokens",
   "types": "./types/index.d.ts",
   "author": {

@@ -3,7 +3,7 @@ export type TurnIO = { input: number; output: number }
 
 declare module 'claude-code' {
   interface PluginState {
-    bridge: {
+    'flight-deck': {
       ctx: Ctx | null
       last: TurnIO | null
       tools: number

@@ -1,4 +1,4 @@
-# bridge
+# flight-deck
 
 A one-line, spaceship-style readout above the Claude Code prompt.
 
@@ -15,7 +15,7 @@ A one-line, spaceship-style readout above the Claude Code prompt.
 | `T+` | Session elapsed time |
 | `Σ` | Total tokens this session |
 
-Readouts drop right-to-left as the window narrows. `/bridge` toggles it.
+Readouts drop right-to-left as the window narrows. `/flight-deck` toggles it.
 
 ### Long-turn toast
 
@@ -31,8 +31,8 @@ Interrupted turns and subagent turns stay quiet. Change the threshold with the
 ## Install
 
 ```
-/plugin marketplace add kedarvyas/claude-bridge
-/plugin install bridge@claude-bridge
+/plugin marketplace add kedarvyas/claude-flight-deck
+/plugin install flight-deck@claude-flight-deck
 /reload-plugins
 ```
 
@@ -53,22 +53,22 @@ What each hook does:
 
 | Hook | What it does |
 | --- | --- |
-| `session.start` | Registers `/bridge`, takes a first usage reading, starts a 1-second clock tick for `T+` |
+| `session.start` | Registers `/flight-deck`, takes a first usage reading, starts a 1-second clock tick for `T+` |
 | `session.measure` | Records the context window's fill after each turn |
 | `turn.start` / `turn.complete` | Records the last turn's tokens; shows the long-turn toast |
 | `tool.call` | Adds one to the tool counter, then passes the call on unchanged. It never sees, blocks or rewrites a call's input or result beyond counting it |
-| `command.run` (`/bridge`) | Shows or hides the line |
+| `command.run` (`/flight-deck`) | Shows or hides the line |
 | `ui.render` (`AbovePrompt`) | Draws the line; gives the band back when a survey needs it |
 
 Verify this yourself:
 
 ```
-claude plugin validate plugins/bridge   # lists every $ call the module makes
-claude plugin test plugins/bridge
+claude plugin validate plugins/flight-deck   # lists every $ call the module makes
+claude plugin test plugins/flight-deck
 ```
 
-The full source is two short files: `plugins/bridge/hooks/register.tsx` and
-`plugins/bridge/hooks/readout.ts`.
+The full source is two short files: `plugins/flight-deck/hooks/register.tsx` and
+`plugins/flight-deck/hooks/readout.ts`.
 
 ## License
 

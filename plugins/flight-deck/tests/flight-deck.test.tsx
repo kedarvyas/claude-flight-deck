@@ -6,7 +6,7 @@ import { AMBER, GREEN, RED, bar, callout, clock, color, dur, level, tok } from '
 const SURFACES = ['terminal', 'desktop'] as const
 
 const band = (bodyColumns: number) => ({
-  plugin: 'bridge',
+  plugin: 'flight-deck',
   component: 'AbovePrompt',
   props: { hasSurvey: false, isWorking: false, maxRows: 10, bodyColumns, scroll: { offset: 0, bodyRows: 10 } },
 } as const)

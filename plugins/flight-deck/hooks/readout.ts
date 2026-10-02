@@ -1,4 +1,4 @@
-// Pure formatting for the bridge readout: no `$`, so tests can call it directly.
+// Pure formatting for the flight deck readout: no `$`, so tests can call it directly.
 
 export const GREEN = '#3fb950'
 export const AMBER = '#d29922'

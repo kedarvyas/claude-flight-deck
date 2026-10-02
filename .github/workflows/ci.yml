@@ -9,5 +9,5 @@ jobs:
         with: { node-version: 22 }
       - run: npm install -g @anthropic-ai/claude-code
       - run: claude plugin validate .
-      - run: claude plugin validate plugins/bridge
-      - run: claude plugin test plugins/bridge
+      - run: claude plugin validate plugins/flight-deck
+      - run: claude plugin test plugins/flight-deck

@@ -4,14 +4,14 @@ import type { EngineInterface, Register } from 'claude-code'
 import type { Ctx, TurnIO } from '../types'
 import { bar, callout, clock, color, level, percentOf, tok, turnToast } from './readout'
 
-const ctx = atom({ plugin: 'bridge', key: 'ctx' } as const, null as Ctx | null)
-const last = atom({ plugin: 'bridge', key: 'last' } as const, null as TurnIO | null)
-const tools = atom({ plugin: 'bridge', key: 'tools' } as const, 0)
-const total = atom({ plugin: 'bridge', key: 'total' } as const, 0)
-const startedAt = atom({ plugin: 'bridge', key: 'startedAt' } as const, 0)
-const now = atom({ plugin: 'bridge', key: 'now' } as const, 0)
-const isHidden = atom({ plugin: 'bridge', key: 'isHidden' } as const, false)
-const turnTools0 = atom({ plugin: 'bridge', key: 'turnTools0' } as const, 0)
+const ctx = atom({ plugin: 'flight-deck', key: 'ctx' } as const, null as Ctx | null)
+const last = atom({ plugin: 'flight-deck', key: 'last' } as const, null as TurnIO | null)
+const tools = atom({ plugin: 'flight-deck', key: 'tools' } as const, 0)
+const total = atom({ plugin: 'flight-deck', key: 'total' } as const, 0)
+const startedAt = atom({ plugin: 'flight-deck', key: 'startedAt' } as const, 0)
+const now = atom({ plugin: 'flight-deck', key: 'now' } as const, 0)
+const isHidden = atom({ plugin: 'flight-deck', key: 'isHidden' } as const, false)
+const turnTools0 = atom({ plugin: 'flight-deck', key: 'turnTools0' } as const, 0)
 
 async function tick($: EngineInterface) {
   const t = await $.clock.now()
@@ -22,7 +22,7 @@ export const register: Register = (on, options) => {
   const toastAfterMs = Number(options.toastAfterSeconds ?? 60) * 1000
 
   on('session.start', async ($, e, next) => {
-    await $.command.register({ name: 'bridge', description: 'Show or hide the bridge readout above the prompt' })
+    await $.command.register({ name: 'flight-deck', description: 'Show or hide the flight deck readout above the prompt' })
     const usage = await $.session.usage()
     const t = await $.clock.now()
     await update($, startedAt, () => usage.startedAt)
@@ -33,9 +33,9 @@ export const register: Register = (on, options) => {
     return next(e)
   })
 
-  on('command.run', { command: 'bridge' }, async ($, e) => {
+  on('command.run', { command: 'flight-deck' }, async ($, e) => {
     const hidden = await update($, isHidden, h => !h)
-    return { text: hidden ? 'Bridge readout dark.' : 'Bridge readout online.' }
+    return { text: hidden ? 'Flight deck dark.' : 'Flight deck online.' }
   })
 
   // Pushed after every main-thread turn: the live window's fill.
@@ -59,7 +59,7 @@ export const register: Register = (on, options) => {
       await update($, last, () => io)
       await update($, total, n => n + io.input + io.output)
     }
-    // Long-turn toast: you looked away, the bridge calls you back. Not for an interrupt you caused.
+    // Long-turn toast: you looked away, the flight deck calls you back. Not for an interrupt you caused.
     if (toastAfterMs > 0 && !e.isAborted && e.durationMs >= toastAfterMs) {
       const calls = (await read($, tools)) - (await read($, turnTools0))
       $.ui.toast(turnToast(e.reason, e.durationMs, calls, io), { timeoutMs: 8000 })
@@ -93,7 +93,7 @@ export const register: Register = (on, options) => {
     const b = bar(pct, w >= 100 ? 12 : 8)
 
     return (
-      <Box key="bridge" flexDirection="row" gap={2}>
+      <Box key="flight-deck" flexDirection="row" gap={2}>
         <Box key="status" flexDirection="row" gap={1}>
           <Text color={hue} bold={isCritical} inverse={blinkOn}>◉ {callout(lvl)}</Text>
         </Box>
