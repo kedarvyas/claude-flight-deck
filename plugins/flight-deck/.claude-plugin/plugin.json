@@ -1,6 +1,6 @@
 {
   "name": "flight-deck",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Command-center readout pane: context fill, last turn I/O, tool calls, session clock and tokens",
   "types": "./types/index.d.ts",
   "author": {
@@ -26,7 +26,8 @@
   "icon": "./.claude-plugin/icon.png",
   "homepage": "https://github.com/kedarvyas/claude-flight-deck#readme",
   "repository": "https://github.com/kedarvyas/claude-flight-deck",
-  "bugs": "https://github.com/kedarvyas/claude-flight-deck/issues",
-  "support": "https://github.com/kedarvyas/claude-flight-deck/issues",
-  "privacyPolicy": "https://github.com/kedarvyas/claude-flight-deck#privacy"
+  "documentationUrl": "https://github.com/kedarvyas/claude-flight-deck#readme",
+  "supportUrl": "https://github.com/kedarvyas/claude-flight-deck/issues",
+  "privacyPolicyUrl": "https://github.com/kedarvyas/claude-flight-deck#privacy",
+  "termsOfServiceUrl": "https://github.com/kedarvyas/claude-flight-deck/blob/main/LICENSE"
 }
