@@ -1,25 +1,19 @@
-import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { Ctx, TurnIO } from '../types'
 import { bar, callout, clock, color, level, percentOf, tok, turnToast } from './readout'
 
-const ctx = atom({ plugin: 'flight-deck', key: 'ctx' } as const, null as Ctx | null)
-const last = atom({ plugin: 'flight-deck', key: 'last' } as const, null as TurnIO | null)
-const tools = atom({ plugin: 'flight-deck', key: 'tools' } as const, 0)
-const total = atom({ plugin: 'flight-deck', key: 'total' } as const, 0)
-const startedAt = atom({ plugin: 'flight-deck', key: 'startedAt' } as const, 0)
-const now = atom({ plugin: 'flight-deck', key: 'now' } as const, 0)
-const isHidden = atom({ plugin: 'flight-deck', key: 'isHidden' } as const, false)
-const turnTools0 = atom({ plugin: 'flight-deck', key: 'turnTools0' } as const, 0)
+// Every value lives in $.state, so it survives a hot reload of this file.
+const CTX = { plugin: 'flight-deck', key: 'ctx' } as const
+const LAST = { plugin: 'flight-deck', key: 'last' } as const
+const TOOLS = { plugin: 'flight-deck', key: 'tools' } as const
+const TOTAL = { plugin: 'flight-deck', key: 'total' } as const
+const STARTED_AT = { plugin: 'flight-deck', key: 'startedAt' } as const
+const NOW = { plugin: 'flight-deck', key: 'now' } as const
+const IS_HIDDEN = { plugin: 'flight-deck', key: 'isHidden' } as const
+const TURN_TOOLS0 = { plugin: 'flight-deck', key: 'turnTools0' } as const
 
 async function tick($: EngineInterface) {
-  const t = await $.clock.now()
-  await update($, now, () => t)
-}
-
-async function toggleHidden($: EngineInterface): Promise<boolean> {
-  return update($, isHidden, h => !h)
+  await $.state.set(NOW, await $.clock.now())
 }
 
 export const register: Register = (on, options) => {
@@ -28,30 +22,35 @@ export const register: Register = (on, options) => {
   on('session.start', async ($, e, next) => {
     await $.command.register({ name: 'flight-deck', description: 'Show or hide the flight deck readout above the prompt' })
     const usage = await $.session.usage()
-    const t = await $.clock.now()
-    await update($, startedAt, () => usage.startedAt)
-    await update($, ctx, () => usage.context)
-    await update($, now, () => t)
+    await $.state.set(STARTED_AT, usage.startedAt)
+    await $.state.set(CTX, { tokens: usage.context.tokens, window: usage.context.window, percent: usage.context.percent })
+    await $.state.set(NOW, await $.clock.now())
     // One tick a second drives T+ and the critical blink.
     $.clock.every(1000, () => tick($))
     return next(e)
   })
 
   on('command.run', { command: 'flight-deck' }, async ($, e, next) => {
-    const hidden = await toggleHidden($)
+    // Read, flip, write only if nothing wrote in between; retry on a miss.
+    let hidden = false
+    for (;;) {
+      const { value = false, version } = await $.state.get(IS_HIDDEN)
+      hidden = !value
+      if ((await $.state.set(IS_HIDDEN, hidden, { ifVersion: version })).isSet) break
+    }
     return { text: hidden ? 'Flight deck dark.' : 'Flight deck online.' }
   })
 
   // Pushed after every main-thread turn: the live window's fill.
   on('session.measure', async ($, e, next) => {
-    await update($, ctx, () => ({ tokens: e.context.tokens, window: e.context.window, percent: e.context.percent }))
+    await $.state.set(CTX, { tokens: e.context.tokens, window: e.context.window, percent: e.context.percent })
     return next(e)
   })
 
   // Main thread only: a subagent's run raises no turn.start.
   on('turn.start', async ($, e, next) => {
-    const n = await read($, tools)
-    await update($, turnTools0, () => n)
+    const { value: n = 0 } = await $.state.get(TOOLS)
+    await $.state.set(TURN_TOOLS0, n)
     return next(e)
   })
 
@@ -60,31 +59,40 @@ export const register: Register = (on, options) => {
     const u = e.usage
     const io = u ? { input: u.input_tokens + u.cache_read_input_tokens + u.cache_creation_input_tokens, output: u.output_tokens } : null
     if (io) {
-      await update($, last, () => io)
-      await update($, total, n => n + io.input + io.output)
+      await $.state.set(LAST, io)
+      for (;;) {
+        const { value = 0, version } = await $.state.get(TOTAL)
+        if ((await $.state.set(TOTAL, value + io.input + io.output, { ifVersion: version })).isSet) break
+      }
     }
     // Long-turn toast: you looked away, the flight deck calls you back. Not for an interrupt you caused.
     if (toastAfterMs > 0 && !e.isAborted && e.durationMs >= toastAfterMs) {
-      const calls = (await read($, tools)) - (await read($, turnTools0))
+      const { value: n = 0 } = await $.state.get(TOOLS)
+      const { value: n0 = 0 } = await $.state.get(TURN_TOOLS0)
+      const calls = n - n0
       $.ui.toast(turnToast(e.reason, e.durationMs, calls, io), { timeoutMs: 8000 })
     }
     return next(e)
   })
 
   on('tool.call', async ($, e, next) => {
-    await update($, tools, n => n + 1)
+    for (;;) {
+      const { value = 0, version } = await $.state.get(TOOLS)
+      if ((await $.state.set(TOOLS, value + 1, { ifVersion: version })).isSet) break
+    }
     return next(e)
   })
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    if (e.props.hasSurvey || (await read($, isHidden))) return next(e)
+    const { value: isHidden = false } = await $.state.get(IS_HIDDEN)
+    if (e.props.hasSurvey || isHidden) return next(e)
     const { Box, Text } = $.ui.resolve(e)
-    const c = await read($, ctx)
-    const io = await read($, last)
-    const calls = await read($, tools)
-    const sum = await read($, total)
-    const t0 = await read($, startedAt)
-    const t = await read($, now)
+    const { value: c = null } = await $.state.get(CTX)
+    const { value: io = null } = await $.state.get(LAST)
+    const { value: calls = 0 } = await $.state.get(TOOLS)
+    const { value: sum = 0 } = await $.state.get(TOTAL)
+    const { value: t0 = 0 } = await $.state.get(STARTED_AT)
+    const { value: t = 0 } = await $.state.get(NOW)
 
     const hasFill = c !== null && (c.tokens !== undefined || c.percent !== undefined)
     const pct = c ? percentOf(c.tokens, c.window, c.percent) : 0
