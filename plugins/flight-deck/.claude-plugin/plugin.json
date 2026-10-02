@@ -1,6 +1,6 @@
 {
   "name": "flight-deck",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Command-center readout pane: context fill, last turn I/O, tool calls, session clock and tokens",
   "types": "./types/index.d.ts",
   "author": {

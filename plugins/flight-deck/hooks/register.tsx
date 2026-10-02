@@ -18,6 +18,10 @@ async function tick($: EngineInterface) {
   await update($, now, () => t)
 }
 
+async function toggleHidden($: EngineInterface): Promise<boolean> {
+  return update($, isHidden, h => !h)
+}
+
 export const register: Register = (on, options) => {
   const toastAfterMs = Number(options.toastAfterSeconds ?? 60) * 1000
 
@@ -33,8 +37,8 @@ export const register: Register = (on, options) => {
     return next(e)
   })
 
-  on('command.run', { command: 'flight-deck' }, async ($, e) => {
-    const hidden = await update($, isHidden, h => !h)
+  on('command.run', { command: 'flight-deck' }, async ($, e, next) => {
+    const hidden = await toggleHidden($)
     return { text: hidden ? 'Flight deck dark.' : 'Flight deck online.' }
   })
 
