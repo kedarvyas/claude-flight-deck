@@ -20,7 +20,7 @@ Readouts drop right-to-left as the window narrows. `/bridge` toggles it.
 ## Install
 
 ```
-/plugin marketplace add <owner>/claude-bridge
+/plugin marketplace add kedarvyas/claude-bridge
 /plugin install bridge@claude-bridge
 ```
 
