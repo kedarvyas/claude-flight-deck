@@ -70,6 +70,17 @@ sh scripts/test.sh                           # runs tests/ against the plugin
 The full source is two short files in `plugins/flight-deck/hooks/`:
 `register.tsx` (the hooks) and `readout.ts` (formatting). It runs no timers and loads no other files.
 
+## Privacy
+
+flight-deck collects nothing and sends nothing. It reads token counts and
+timing that Claude Code already computes for the session, keeps them in the
+session's own memory to draw the line, and drops them when the session ends.
+It makes no network requests, writes no files and runs no programs.
+
+## Support
+
+Questions and bug reports: [open an issue](https://github.com/kedarvyas/claude-flight-deck/issues).
+
 ## License
 
 MIT
