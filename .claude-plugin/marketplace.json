@@ -8,8 +8,8 @@
     {
       "name": "flight-deck",
       "source": "./plugins/flight-deck",
-      "description": "Spaceship-style readout above the prompt (context fill, last turn I/O, tool calls, session clock and tokens) and a toast when a long turn finishes",
-      "version": "0.5.2"
+      "description": "A spaceship-style readout above the prompt: context fill with a colour-coded status, last turn's tokens, tool calls, session time and total tokens, plus a toast when a long turn finishes.",
+      "version": "0.5.3"
     }
   ]
 }

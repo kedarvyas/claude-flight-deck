@@ -1,7 +1,7 @@
 {
   "name": "flight-deck",
-  "version": "0.5.2",
-  "description": "Command-center readout pane: context fill, last turn I/O, tool calls, session clock and tokens",
+  "version": "0.5.3",
+  "description": "A spaceship-style readout above the prompt: context fill with a colour-coded status, last turn's tokens, tool calls, session time and total tokens, plus a toast when a long turn finishes.",
   "types": "./types/index.d.ts",
   "author": {
     "name": "Kedar Vyas",
