@@ -93,26 +93,11 @@ export const register: Register = (on, options) => {
     const isCritical = lvl === 'critical'
     const elapsedMs = t0 ? t - t0 : 0
 
-    // Terminal and desktop tick T+ and blink CRITICAL on their own frame clock
-    // (hooks/ticker.ts); other surfaces have no Client, so they show T+ as of
-    // this draw and a steady highlight.
-    let blink: RenderElement | null = null
-    let elapsedClock: RenderElement | null = null
-    if (e.surface === 'terminal' || e.surface === 'desktop') {
-      const { Client } = $.ui.resolve(e)
-      if (isCritical) {
-        blink = <Client key="status-blink" module="./ticker.ts" props={{ mode: 'blink', elapsedMs, text: `◉ ${callout(lvl)}`, color: hue }} />
-      }
-      if (t0) {
-        elapsedClock = <Client key="elapsed-clock" module="./ticker.ts" props={{ mode: 'elapsed', elapsedMs, text: '', color: hue }} />
-      }
-    }
-
     // Shed readouts right to left as the band narrows.
     const w = e.props.bodyColumns
     const b = bar(pct, w >= 100 ? 12 : 8)
 
-    return (
+    const draw = (blink: RenderElement | null, elapsedClock: RenderElement | null) => (
       <Box key="flight-deck" flexDirection="row" gap={2}>
         <Box key="status" flexDirection="row" gap={1}>
           {blink ?? <Text color={hue} bold={isCritical} inverse={isCritical}>◉ {callout(lvl)}</Text>}
@@ -150,5 +135,17 @@ export const register: Register = (on, options) => {
         )}
       </Box>
     )
+
+    // Terminal and desktop tick T+ and blink CRITICAL on their own frame clock
+    // (hooks/ticker.ts); other surfaces have no Client, so they show T+ as of
+    // this draw and a steady highlight.
+    if (e.surface === 'terminal' || e.surface === 'desktop') {
+      const { Client } = $.ui.resolve(e)
+      return draw(
+        isCritical ? Client({ key: 'status-blink', module: './ticker.ts', props: { mode: 'blink', elapsedMs, text: `◉ ${callout(lvl)}`, color: hue } }) : null,
+        t0 ? Client({ key: 'elapsed-clock', module: './ticker.ts', props: { mode: 'elapsed', elapsedMs, text: '', color: hue } }) : null,
+      )
+    }
+    return draw(null, null)
   })
 }
