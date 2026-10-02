@@ -1,9 +1,12 @@
 import type { On } from 'claude-code'
-import { describe, expect, test } from 'claude-code/testing'
+import { describe, expect, mock, test } from 'claude-code/testing'
 
 import { AMBER, GREEN, RED, bar, callout, clock, color, dur, level, tok } from '../hooks/readout'
 
 const SURFACES = ['terminal', 'desktop'] as const
+
+// Moves a mounted drawing's frame clock (terminal and desktop, where Client runs).
+const frames = (ui: unknown, ms: number) => (ui as { advance: (ms: number) => Promise<void> }).advance(ms)
 
 const band = (bodyColumns: number) => ({
   plugin: 'flight-deck',
@@ -39,6 +42,7 @@ describe('readout', () => {
 
 describe('band', () => {
   test('starts nominal, then reads a turn, a tool call and a critical window', async ($, on) => {
+    mock.clock(on)
     on('session.measure', (_$, e) => ({ changed: e.changed }))
     on('turn.complete', () => ({ text: '' }))
     on('tool.call', () => ({ result: 'ok' as never }))
@@ -61,8 +65,7 @@ describe('band', () => {
 
     for (const surface of SURFACES) {
       const ui = await $.ui.mount({ ...band(140), surface } as never)
-      expect((await ui.find({ key: 'status' }))?.text).toContain('CONTEXT CRITICAL')
-      expect((await ui.find({ type: 'Text', text: /CONTEXT CRITICAL/ }))?.props.color).toBe(RED)
+      expect((await ui.find({ type: 'Text', text: /CONTEXT CRITICAL/, in: 'status-blink' }))?.props.color).toBe(RED)
       expect((await ui.find({ key: 'ctx' }))?.text).toContain('93%')
       expect((await ui.find({ key: 'io' }))?.text).toContain('10k↓ 500↑')
       expect((await ui.find({ key: 'tools' }))?.text).toMatch(/TOOLS\s*1$/)
@@ -117,5 +120,44 @@ describe('long-turn toast', () => {
     const toasts = setup(on)
     await $.turn.complete(complete(400_000))
     expect(toasts).toEqual([])
+  })
+})
+
+describe('clock', () => {
+  test('T+ starts from the session clock and ticks on the surface', async ($, on) => {
+    const clock = mock.clock(on, { now: 1_003_000 })
+    on('session.start', (_$, e) => ({ cwd: e.cwd }))
+    on('session.usage', () => ({ value: { startedAt: 1_000_000, rateLimits: [], context: { window: 200_000 } } }))
+    on('command.register', (_$, e) => ({ value: { command: e.name } }))
+    await $.session.start({ surface: 'terminal', isInteractive: true, cwd: '/work' } as never)
+
+    for (const surface of SURFACES) {
+      const ui = await $.ui.mount({ ...band(140), surface } as never)
+      expect((await ui.find({ type: 'Text', text: /^00:00:03$/, in: 'elapsed-clock' }))).toBeDefined()
+      await frames(ui, 2_000)
+      expect((await ui.find({ type: 'Text', text: /^00:00:05$/, in: 'elapsed-clock' }))).toBeDefined()
+      await ui.unmount()
+    }
+
+    // A surface without Client shows T+ as of the draw.
+    await clock.advance(7_000)
+    const vs = await $.ui.mount({ ...band(140), surface: 'vscode' } as never)
+    expect((await vs.find({ key: 'elapsed' }))?.text).toMatch(/00:00:10$/)
+    await vs.unmount()
+  })
+
+  test('CONTEXT CRITICAL blinks once a second', async ($, on) => {
+    mock.clock(on)
+    on('session.measure', (_$, e) => ({ changed: e.changed }))
+    await $.session.measure({ context: { tokens: 190_000, window: 200_000, percent: 95 }, rateLimits: [], changed: [] } as never)
+    const ui = await $.ui.mount({ ...band(140), surface: 'terminal' } as never)
+    const label = () => ui.find({ type: 'Text', text: /CONTEXT CRITICAL/, in: 'status-blink' })
+    expect((await label())?.props.inverse).toBe(true)
+    expect((await label())?.props.color).toBe(RED)
+    await frames(ui, 1_000)
+    expect((await label())?.props.inverse).toBe(false)
+    await frames(ui, 1_000)
+    expect((await label())?.props.inverse).toBe(true)
+    await ui.unmount()
   })
 })

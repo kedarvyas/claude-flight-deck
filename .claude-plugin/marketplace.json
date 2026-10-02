@@ -9,7 +9,7 @@
       "name": "flight-deck",
       "source": "./plugins/flight-deck",
       "description": "Spaceship-style readout above the prompt (context fill, last turn I/O, tool calls, session clock and tokens) and a toast when a long turn finishes",
-      "version": "0.3.2"
+      "version": "0.4.0"
     }
   ]
 }

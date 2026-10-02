@@ -9,7 +9,6 @@ declare module 'claude-code' {
       tools: number
       total: number
       startedAt: number
-      now: number
       isHidden: boolean
       turnTools0: number
     }

@@ -53,12 +53,17 @@ What each hook does:
 
 | Hook | What it does |
 | --- | --- |
-| `session.start` | Registers `/flight-deck`, takes a first usage reading, starts a 1-second clock tick for `T+` |
+| `session.start` | Registers `/flight-deck` and takes a first usage reading |
 | `session.measure` | Records the context window's fill after each turn |
 | `turn.start` / `turn.complete` | Records the last turn's tokens; shows the long-turn toast |
 | `tool.call` | Adds one to the tool counter, then passes the call on unchanged. It never sees, blocks or rewrites a call's input or result beyond counting it |
 | `command.run` (`/flight-deck`) | Shows or hides the line |
 | `ui.render` (`AbovePrompt`) | Draws the line; gives the band back when a survey needs it |
+
+`T+` and the blinking `CONTEXT CRITICAL` label tick on the surface's own frame
+clock through a tiny display module (`hooks/ticker.ts`, a `Client` element), so the
+hooks module runs no timer. VS Code and mobile have no `Client`: there `T+` shows
+the time as of the last update and the critical label is a steady highlight.
 
 Verify this yourself:
 
@@ -67,8 +72,8 @@ claude plugin validate plugins/flight-deck   # lists every $ call the module mak
 claude plugin test plugins/flight-deck
 ```
 
-The full source is two short files: `plugins/flight-deck/hooks/register.tsx` and
-`plugins/flight-deck/hooks/readout.ts`.
+The full source is three short files in `plugins/flight-deck/hooks/`:
+`register.tsx` (the hooks), `readout.ts` (formatting) and `ticker.ts` (the clock display).
 
 ## License
 

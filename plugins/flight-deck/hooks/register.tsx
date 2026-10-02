@@ -1,4 +1,4 @@
-import type { EngineInterface, Register } from 'claude-code'
+import type { Register } from 'claude-code'
 
 import { bar, callout, clock, color, level, percentOf, tok, turnToast } from './readout'
 
@@ -8,13 +8,8 @@ const LAST = { plugin: 'flight-deck', key: 'last' } as const
 const TOOLS = { plugin: 'flight-deck', key: 'tools' } as const
 const TOTAL = { plugin: 'flight-deck', key: 'total' } as const
 const STARTED_AT = { plugin: 'flight-deck', key: 'startedAt' } as const
-const NOW = { plugin: 'flight-deck', key: 'now' } as const
 const IS_HIDDEN = { plugin: 'flight-deck', key: 'isHidden' } as const
 const TURN_TOOLS0 = { plugin: 'flight-deck', key: 'turnTools0' } as const
-
-async function tick($: EngineInterface) {
-  await $.state.set(NOW, await $.clock.now())
-}
 
 export const register: Register = (on, options) => {
   const toastAfterMs = Number(options.toastAfterSeconds ?? 60) * 1000
@@ -24,9 +19,6 @@ export const register: Register = (on, options) => {
     const usage = await $.session.usage()
     await $.state.set(STARTED_AT, usage.startedAt)
     await $.state.set(CTX, { tokens: usage.context.tokens, window: usage.context.window, percent: usage.context.percent })
-    await $.state.set(NOW, await $.clock.now())
-    // One tick a second drives T+ and the critical blink.
-    $.clock.every(1000, () => tick($))
     return next(e)
   })
 
@@ -87,19 +79,22 @@ export const register: Register = (on, options) => {
     const { value: isHidden = false } = await $.state.get(IS_HIDDEN)
     if (e.props.hasSurvey || isHidden) return next(e)
     const { Box, Text } = $.ui.resolve(e)
+    const Client = e.surface === 'terminal' || e.surface === 'desktop' ? $.ui.resolve(e).Client : undefined
     const { value: c = null } = await $.state.get(CTX)
     const { value: io = null } = await $.state.get(LAST)
     const { value: calls = 0 } = await $.state.get(TOOLS)
     const { value: sum = 0 } = await $.state.get(TOTAL)
     const { value: t0 = 0 } = await $.state.get(STARTED_AT)
-    const { value: t = 0 } = await $.state.get(NOW)
+    const t = await $.clock.now()
 
     const hasFill = c !== null && (c.tokens !== undefined || c.percent !== undefined)
     const pct = c ? percentOf(c.tokens, c.window, c.percent) : 0
     const hue = color(pct)
     const lvl = level(pct)
     const isCritical = lvl === 'critical'
-    const blinkOn = isCritical && Math.floor(t / 1000) % 2 === 0
+    const elapsedMs = t0 ? t - t0 : 0
+    // Terminal and desktop tick T+ and blink CRITICAL on their own frame clock;
+    // other surfaces show T+ as of this draw, with a steady highlight.
     // Shed readouts right to left as the band narrows.
     const w = e.props.bodyColumns
     const b = bar(pct, w >= 100 ? 12 : 8)
@@ -107,7 +102,11 @@ export const register: Register = (on, options) => {
     return (
       <Box key="flight-deck" flexDirection="row" gap={2}>
         <Box key="status" flexDirection="row" gap={1}>
-          <Text color={hue} bold={isCritical} inverse={blinkOn}>◉ {callout(lvl)}</Text>
+          {isCritical && Client ? (
+            <Client key="status-blink" module="./ticker.ts" props={{ mode: 'blink', elapsedMs, text: `◉ ${callout(lvl)}`, color: hue }} />
+          ) : (
+            <Text color={hue} bold={isCritical} inverse={isCritical}>◉ {callout(lvl)}</Text>
+          )}
         </Box>
         <Box key="ctx" flexDirection="row" gap={1}>
           <Text dimColor>CTX</Text>
@@ -131,7 +130,13 @@ export const register: Register = (on, options) => {
         {w >= 115 && (
           <Box key="elapsed" flexDirection="row" gap={1}>
             <Text dimColor>T+</Text>
-            <Text>{t0 ? clock(t - t0) : '--:--:--'}</Text>
+            {!t0 ? (
+              <Text>--:--:--</Text>
+            ) : Client ? (
+              <Client key="elapsed-clock" module="./ticker.ts" props={{ mode: 'elapsed', elapsedMs, text: '', color: hue }} />
+            ) : (
+              <Text>{clock(elapsedMs)}</Text>
+            )}
           </Box>
         )}
         {w >= 128 && (
