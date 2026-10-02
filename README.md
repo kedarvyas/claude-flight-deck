@@ -48,6 +48,18 @@ Nothing outside the session. It reads token figures the engine already computes
 (`$.session.usage`, `session.measure`, `turn.complete`, `tool.call`) and draws one
 line. It makes **no network, file system or process calls**, and never blocks or
 rewrites a tool call or prompt — every hook passes through with `next(e)`.
+
+What each hook does:
+
+| Hook | What it does |
+| --- | --- |
+| `session.start` | Registers `/bridge`, takes a first usage reading, starts a 1-second clock tick for `T+` |
+| `session.measure` | Records the context window's fill after each turn |
+| `turn.start` / `turn.complete` | Records the last turn's tokens; shows the long-turn toast |
+| `tool.call` | Adds one to the tool counter, then passes the call on unchanged. It never sees, blocks or rewrites a call's input or result beyond counting it |
+| `command.run` (`/bridge`) | Shows or hides the line |
+| `ui.render` (`AbovePrompt`) | Draws the line; gives the band back when a survey needs it |
+
 Verify this yourself:
 
 ```

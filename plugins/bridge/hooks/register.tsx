@@ -1,5 +1,5 @@
 import { atom, read, update } from 'claude-code'
-import type { Register } from 'claude-code'
+import type { EngineInterface, Register } from 'claude-code'
 
 import type { Ctx, TurnIO } from '../types'
 import { bar, callout, clock, color, level, percentOf, tok, turnToast } from './readout'
@@ -13,6 +13,11 @@ const now = atom({ plugin: 'bridge', key: 'now' } as const, 0)
 const isHidden = atom({ plugin: 'bridge', key: 'isHidden' } as const, false)
 const turnTools0 = atom({ plugin: 'bridge', key: 'turnTools0' } as const, 0)
 
+async function tick($: EngineInterface) {
+  const t = await $.clock.now()
+  await update($, now, () => t)
+}
+
 export const register: Register = (on, options) => {
   const toastAfterMs = Number(options.toastAfterSeconds ?? 60) * 1000
 
@@ -24,11 +29,11 @@ export const register: Register = (on, options) => {
     await update($, ctx, () => usage.context)
     await update($, now, () => t)
     // One tick a second drives T+ and the critical blink.
-    $.clock.every(1000, () => void $.clock.now().then(t => update($, now, () => t)))
+    $.clock.every(1000, () => tick($))
     return next(e)
   })
 
-  on('command.run', { command: 'bridge' }, async $ => {
+  on('command.run', { command: 'bridge' }, async ($, e) => {
     const hidden = await update($, isHidden, h => !h)
     return { text: hidden ? 'Bridge readout dark.' : 'Bridge readout online.' }
   })

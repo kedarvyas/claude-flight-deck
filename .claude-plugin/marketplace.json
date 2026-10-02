@@ -9,7 +9,7 @@
       "name": "bridge",
       "source": "./plugins/bridge",
       "description": "Spaceship-style readout above the prompt (context fill, last turn I/O, tool calls, session clock and tokens) and a toast when a long turn finishes",
-      "version": "0.2.0"
+      "version": "0.2.1"
     }
   ]
 }
