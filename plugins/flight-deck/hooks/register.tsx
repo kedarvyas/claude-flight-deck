@@ -1,4 +1,4 @@
-import type { Register, RenderElement } from 'claude-code'
+import type { Register } from 'claude-code'
 
 import { bar, callout, clock, color, level, percentOf, tok, turnToast } from './readout'
 
@@ -97,10 +97,12 @@ export const register: Register = (on, options) => {
     const w = e.props.bodyColumns
     const b = bar(pct, w >= 100 ? 12 : 8)
 
-    const draw = (blink: RenderElement | null, elapsedClock: RenderElement | null) => (
+    // T+ and the critical label redraw with every update (each turn, tool call and
+    // context reading), so T+ reads the time as of the latest one.
+    return (
       <Box key="flight-deck" flexDirection="row" gap={2}>
         <Box key="status" flexDirection="row" gap={1}>
-          {blink ?? <Text color={hue} bold={isCritical} inverse={isCritical}>◉ {callout(lvl)}</Text>}
+          <Text color={hue} bold={isCritical} inverse={isCritical}>◉ {callout(lvl)}</Text>
         </Box>
         <Box key="ctx" flexDirection="row" gap={1}>
           <Text dimColor>CTX</Text>
@@ -124,7 +126,7 @@ export const register: Register = (on, options) => {
         {w >= 115 && (
           <Box key="elapsed" flexDirection="row" gap={1}>
             <Text dimColor>T+</Text>
-            {elapsedClock ?? <Text>{t0 ? clock(elapsedMs) : '--:--:--'}</Text>}
+            <Text>{t0 ? clock(elapsedMs) : '--:--:--'}</Text>
           </Box>
         )}
         {w >= 128 && (
@@ -135,17 +137,5 @@ export const register: Register = (on, options) => {
         )}
       </Box>
     )
-
-    // Terminal and desktop tick T+ and blink CRITICAL on their own frame clock
-    // (hooks/ticker.ts); other surfaces have no Client, so they show T+ as of
-    // this draw and a steady highlight.
-    if (e.surface === 'terminal' || e.surface === 'desktop') {
-      const { Client } = $.ui.resolve(e)
-      return draw(
-        isCritical ? Client({ key: 'status-blink', module: './ticker.ts', props: { mode: 'blink', elapsedMs, text: `◉ ${callout(lvl)}`, color: hue } }) : null,
-        t0 ? Client({ key: 'elapsed-clock', module: './ticker.ts', props: { mode: 'elapsed', elapsedMs, text: '', color: hue } }) : null,
-      )
-    }
-    return draw(null, null)
   })
 }

@@ -8,11 +8,11 @@ A one-line, spaceship-style readout above the Claude Code prompt.
 
 | Readout | Meaning |
 | --- | --- |
-| `◉ STATUS` | `NOMINAL` < 50% context, `CAUTION` 50–80%, `ALERT` > 80%, `CONTEXT CRITICAL` (blinking) > 90% |
+| `◉ STATUS` | `NOMINAL` < 50% context, `CAUTION` 50–80%, `ALERT` > 80%, `CONTEXT CRITICAL` (highlighted red) > 90% |
 | `CTX` | Context used / window, as a segmented bar and percent |
 | `I/O` | Last turn's input (incl. cache) ↓ and output ↑ tokens |
 | `TOOLS` | Tool calls this session (subagents included) |
-| `T+` | Session elapsed time |
+| `T+` | Session elapsed time, as of the latest update (each turn, tool call or context reading) |
 | `Σ` | Total tokens this session |
 
 Readouts drop right-to-left as the window narrows. `/flight-deck` toggles it.
@@ -60,11 +60,6 @@ What each hook does:
 | `command.run` (`/flight-deck`) | Shows or hides the line |
 | `ui.render` (`AbovePrompt`) | Draws the line; gives the band back when a survey needs it |
 
-`T+` and the blinking `CONTEXT CRITICAL` label tick on the surface's own frame
-clock through a tiny display module (`hooks/ticker.ts`, a `Client` element), so the
-hooks module runs no timer. VS Code and mobile have no `Client`: there `T+` shows
-the time as of the last update and the critical label is a steady highlight.
-
 Verify this yourself:
 
 ```
@@ -72,8 +67,8 @@ claude plugin validate plugins/flight-deck   # lists every $ call the module mak
 sh scripts/test.sh                           # runs tests/ against the plugin
 ```
 
-The full source is three short files in `plugins/flight-deck/hooks/`:
-`register.tsx` (the hooks), `readout.ts` (formatting) and `ticker.ts` (the clock display).
+The full source is two short files in `plugins/flight-deck/hooks/`:
+`register.tsx` (the hooks) and `readout.ts` (formatting). It runs no timers and loads no other files.
 
 ## License
 

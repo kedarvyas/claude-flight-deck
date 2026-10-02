@@ -5,9 +5,6 @@ import { AMBER, GREEN, RED, bar, callout, clock, color, dur, level, tok } from '
 
 const SURFACES = ['terminal', 'desktop'] as const
 
-// Moves a mounted drawing's frame clock (terminal and desktop, where Client runs).
-const frames = (ui: unknown, ms: number) => (ui as { advance: (ms: number) => Promise<void> }).advance(ms)
-
 const band = (bodyColumns: number) => ({
   plugin: 'flight-deck',
   component: 'AbovePrompt',
@@ -65,7 +62,8 @@ describe('band', () => {
 
     for (const surface of SURFACES) {
       const ui = await $.ui.mount({ ...band(140), surface } as never)
-      expect((await ui.find({ type: 'Text', text: /CONTEXT CRITICAL/, in: 'status-blink' }))?.props.color).toBe(RED)
+      expect((await ui.find({ key: 'status' }))?.text).toContain('CONTEXT CRITICAL')
+      expect((await ui.find({ type: 'Text', text: /CONTEXT CRITICAL/ }))?.props).toMatchObject({ color: RED, inverse: true })
       expect((await ui.find({ key: 'ctx' }))?.text).toContain('93%')
       expect((await ui.find({ key: 'io' }))?.text).toContain('10k↓ 500↑')
       expect((await ui.find({ key: 'tools' }))?.text).toMatch(/TOOLS\s*1$/)
@@ -124,40 +122,25 @@ describe('long-turn toast', () => {
 })
 
 describe('clock', () => {
-  test('T+ starts from the session clock and ticks on the surface', async ($, on) => {
+  test('T+ reads the session clock as of each update, on every surface', async ($, on) => {
     const clock = mock.clock(on, { now: 1_003_000 })
     on('session.start', (_$, e) => ({ cwd: e.cwd }))
     on('session.usage', () => ({ value: { startedAt: 1_000_000, rateLimits: [], context: { window: 200_000 } } }))
     on('command.register', (_$, e) => ({ value: { command: e.name } }))
+    on('tool.call', () => ({ result: 'ok' as never }))
     await $.session.start({ surface: 'terminal', isInteractive: true, cwd: '/work' } as never)
 
-    for (const surface of SURFACES) {
+    for (const surface of [...SURFACES, 'vscode'] as const) {
       const ui = await $.ui.mount({ ...band(140), surface } as never)
-      expect((await ui.find({ type: 'Text', text: /^00:00:03$/, in: 'elapsed-clock' }))).toBeDefined()
-      await frames(ui, 2_000)
-      expect((await ui.find({ type: 'Text', text: /^00:00:05$/, in: 'elapsed-clock' }))).toBeDefined()
+      expect((await ui.find({ key: 'elapsed' }))?.text).toMatch(/00:00:03$/)
       await ui.unmount()
     }
 
-    // A surface without Client shows T+ as of the draw.
-    await clock.advance(7_000)
-    const vs = await $.ui.mount({ ...band(140), surface: 'vscode' } as never)
-    expect((await vs.find({ key: 'elapsed' }))?.text).toMatch(/00:00:10$/)
-    await vs.unmount()
-  })
-
-  test('CONTEXT CRITICAL blinks once a second', async ($, on) => {
-    mock.clock(on)
-    on('session.measure', (_$, e) => ({ changed: e.changed }))
-    await $.session.measure({ context: { tokens: 190_000, window: 200_000, percent: 95 }, rateLimits: [], changed: [] } as never)
+    // The next update (here a tool call) redraws with the time it happened.
+    await clock.advance(62_000)
+    await $.tool.call({ tool: 'Bash', tool_use_id: 'later', input: {} } as never)
     const ui = await $.ui.mount({ ...band(140), surface: 'terminal' } as never)
-    const label = () => ui.find({ type: 'Text', text: /CONTEXT CRITICAL/, in: 'status-blink' })
-    expect((await label())?.props.inverse).toBe(true)
-    expect((await label())?.props.color).toBe(RED)
-    await frames(ui, 1_000)
-    expect((await label())?.props.inverse).toBe(false)
-    await frames(ui, 1_000)
-    expect((await label())?.props.inverse).toBe(true)
+    expect((await ui.find({ key: 'elapsed' }))?.text).toMatch(/00:01:05$/)
     await ui.unmount()
   })
 })
