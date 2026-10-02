@@ -1,4 +1,4 @@
-import type { Register } from 'claude-code'
+import type { Register, RenderElement } from 'claude-code'
 
 import { bar, callout, clock, color, level, percentOf, tok, turnToast } from './readout'
 
@@ -79,7 +79,6 @@ export const register: Register = (on, options) => {
     const { value: isHidden = false } = await $.state.get(IS_HIDDEN)
     if (e.props.hasSurvey || isHidden) return next(e)
     const { Box, Text } = $.ui.resolve(e)
-    const Client = e.surface === 'terminal' || e.surface === 'desktop' ? $.ui.resolve(e).Client : undefined
     const { value: c = null } = await $.state.get(CTX)
     const { value: io = null } = await $.state.get(LAST)
     const { value: calls = 0 } = await $.state.get(TOOLS)
@@ -93,8 +92,22 @@ export const register: Register = (on, options) => {
     const lvl = level(pct)
     const isCritical = lvl === 'critical'
     const elapsedMs = t0 ? t - t0 : 0
-    // Terminal and desktop tick T+ and blink CRITICAL on their own frame clock;
-    // other surfaces show T+ as of this draw, with a steady highlight.
+
+    // Terminal and desktop tick T+ and blink CRITICAL on their own frame clock
+    // (hooks/ticker.ts); other surfaces have no Client, so they show T+ as of
+    // this draw and a steady highlight.
+    let blink: RenderElement | null = null
+    let elapsedClock: RenderElement | null = null
+    if (e.surface === 'terminal' || e.surface === 'desktop') {
+      const { Client } = $.ui.resolve(e)
+      if (isCritical) {
+        blink = <Client key="status-blink" module="./ticker.ts" props={{ mode: 'blink', elapsedMs, text: `◉ ${callout(lvl)}`, color: hue }} />
+      }
+      if (t0) {
+        elapsedClock = <Client key="elapsed-clock" module="./ticker.ts" props={{ mode: 'elapsed', elapsedMs, text: '', color: hue }} />
+      }
+    }
+
     // Shed readouts right to left as the band narrows.
     const w = e.props.bodyColumns
     const b = bar(pct, w >= 100 ? 12 : 8)
@@ -102,11 +115,7 @@ export const register: Register = (on, options) => {
     return (
       <Box key="flight-deck" flexDirection="row" gap={2}>
         <Box key="status" flexDirection="row" gap={1}>
-          {isCritical && Client ? (
-            <Client key="status-blink" module="./ticker.ts" props={{ mode: 'blink', elapsedMs, text: `◉ ${callout(lvl)}`, color: hue }} />
-          ) : (
-            <Text color={hue} bold={isCritical} inverse={isCritical}>◉ {callout(lvl)}</Text>
-          )}
+          {blink ?? <Text color={hue} bold={isCritical} inverse={isCritical}>◉ {callout(lvl)}</Text>}
         </Box>
         <Box key="ctx" flexDirection="row" gap={1}>
           <Text dimColor>CTX</Text>
@@ -130,13 +139,7 @@ export const register: Register = (on, options) => {
         {w >= 115 && (
           <Box key="elapsed" flexDirection="row" gap={1}>
             <Text dimColor>T+</Text>
-            {!t0 ? (
-              <Text>--:--:--</Text>
-            ) : Client ? (
-              <Client key="elapsed-clock" module="./ticker.ts" props={{ mode: 'elapsed', elapsedMs, text: '', color: hue }} />
-            ) : (
-              <Text>{clock(elapsedMs)}</Text>
-            )}
+            {elapsedClock ?? <Text>{t0 ? clock(elapsedMs) : '--:--:--'}</Text>}
           </Box>
         )}
         {w >= 128 && (
