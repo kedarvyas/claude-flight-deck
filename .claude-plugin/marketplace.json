@@ -1,0 +1,15 @@
+{
+  "name": "claude-bridge",
+  "description": "Minimal status readouts for Claude Code",
+  "owner": {
+    "name": "Kedar Vyas"
+  },
+  "plugins": [
+    {
+      "name": "bridge",
+      "source": "./plugins/bridge",
+      "description": "Spaceship-style readout above the prompt: context fill, last turn I/O, tool calls, session clock and tokens",
+      "version": "0.1.0"
+    }
+  ]
+}

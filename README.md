@@ -1,0 +1,45 @@
+# bridge
+
+A one-line, spaceship-style readout above the Claude Code prompt.
+
+```
+◉ NOMINAL  CTX ▰▱▱▱▱▱▱▱▱▱▱▱ 10% 19.2k/200k  I/O 19k↓ 1.1k↑  TOOLS 17  T+00:12:43  Σ 245k
+```
+
+| Readout | Meaning |
+| --- | --- |
+| `◉ STATUS` | `NOMINAL` < 50% context, `CAUTION` 50–80%, `ALERT` > 80%, `CONTEXT CRITICAL` (blinking) > 90% |
+| `CTX` | Context used / window, as a segmented bar and percent |
+| `I/O` | Last turn's input (incl. cache) ↓ and output ↑ tokens |
+| `TOOLS` | Tool calls this session (subagents included) |
+| `T+` | Session elapsed time |
+| `Σ` | Total tokens this session |
+
+Readouts drop right-to-left as the window narrows. `/bridge` toggles it.
+
+## Install
+
+```
+/plugin marketplace add <owner>/claude-bridge
+/plugin install bridge@claude-bridge
+```
+
+## What it can touch
+
+Nothing outside the session. It reads token figures the engine already computes
+(`$.session.usage`, `session.measure`, `turn.complete`, `tool.call`) and draws one
+line. It makes **no network, file system or process calls**, and never blocks or
+rewrites a tool call or prompt — every hook passes through with `next(e)`.
+Verify this yourself:
+
+```
+claude plugin validate plugins/bridge   # lists every $ call the module makes
+claude plugin test plugins/bridge
+```
+
+The full source is two short files: `plugins/bridge/hooks/register.tsx` and
+`plugins/bridge/hooks/readout.ts`.
+
+## License
+
+MIT

@@ -1,0 +1,16 @@
+{
+  "name": "bridge",
+  "version": "0.1.0",
+  "description": "Command-center readout pane: context fill, last turn I/O, tool calls, session clock and tokens",
+  "types": "./types/index.d.ts",
+  "author": {
+    "name": "Kedar Vyas"
+  },
+  "license": "MIT",
+  "keywords": [
+    "context",
+    "tokens",
+    "status",
+    "band"
+  ]
+}
