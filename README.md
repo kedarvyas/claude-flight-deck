@@ -69,7 +69,7 @@ Verify this yourself:
 
 ```
 claude plugin validate plugins/flight-deck   # lists every $ call the module makes
-claude plugin test plugins/flight-deck
+sh scripts/test.sh                           # runs tests/ against the plugin
 ```
 
 The full source is three short files in `plugins/flight-deck/hooks/`:

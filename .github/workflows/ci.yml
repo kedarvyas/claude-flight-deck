@@ -10,4 +10,4 @@ jobs:
       - run: npm install -g @anthropic-ai/claude-code
       - run: claude plugin validate .
       - run: claude plugin validate plugins/flight-deck
-      - run: claude plugin test plugins/flight-deck
+      - run: sh scripts/test.sh
