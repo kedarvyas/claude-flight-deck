@@ -2,7 +2,9 @@
 
 A one-line, spaceship-style readout above the Claude Code prompt.
 
-![Flight Deck going from NOMINAL to CAUTION to ALERT, in light and dark themes](docs/flight-deck.gif)
+![Flight Deck climbing from NOMINAL to CONTEXT CRITICAL while a prompt is typed, then the long-turn toast](docs/flight-deck-live.gif)
+
+<sub>Demo: the context fill is animated for the recording.</sub>
 
 | Dark | Light |
 | --- | --- |
