@@ -2,9 +2,12 @@
 
 A one-line, spaceship-style readout above the Claude Code prompt.
 
-```
-◉ NOMINAL  CTX ▰▱▱▱▱▱▱▱▱▱▱▱ 10% 19.2k/200k  I/O 19k↓ 1.1k↑  TOOLS 17  T+00:12:43  Σ 245k
-```
+![Flight Deck going from NOMINAL to CAUTION to ALERT, in light and dark themes](docs/flight-deck.gif)
+
+| Dark | Light |
+| --- | --- |
+| ![NOMINAL at 18% in the dark theme](docs/nominal-dark.png) | ![CAUTION at 62% in the light theme](docs/caution-light.png) |
+| ![ALERT at 84% in the dark theme](docs/alert-dark.png) | ![ALERT at 84% in the light theme](docs/alert-light.png) |
 
 | Readout | Meaning |
 | --- | --- |
@@ -29,6 +32,8 @@ Interrupted turns and subagent turns stay quiet. Change the threshold with the
 `toastAfterSeconds` option in `/plugin` (0 turns it off).
 
 ## Install
+
+In Claude Code, search **Flight Deck** in the plugin browser, or:
 
 ```
 /plugin marketplace add kedarvyas/claude-flight-deck
